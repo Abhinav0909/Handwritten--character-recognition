@@ -7,7 +7,6 @@
 !mv IAM_Words/words.txt data
 from tensorflow.keras.layers.experimental.preprocessing import StringLookup
 from tensorflow import keras
-
 import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
