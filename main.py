@@ -342,3 +342,4 @@ class EditDistanceCallback(keras.callbacks.Callback):
         print(
             f"Mean edit distance for epoch {epoch + 1}: {np.mean(edit_distances):.4f}"
         )
+       
