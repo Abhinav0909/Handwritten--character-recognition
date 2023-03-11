@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 import os
+import difflib  
 
 np.random.seed(42)
 tf.random.set_seed(42)
@@ -359,6 +360,7 @@ class EditDistanceCallback(keras.callbacks.Callback):
         callbacks=[edit_distance_callback],
         )
         # A utility function to decode the output of the network.
+
 def decode_batch_predictions(pred):
     input_len = np.ones(pred.shape[0]) * pred.shape[1]
     # Use greedy search. For complex tasks, you can use beam search.
@@ -371,8 +373,61 @@ def decode_batch_predictions(pred):
         res = tf.gather(res, tf.where(tf.math.not_equal(res, -1)))
         res = tf.strings.reduce_join(num_to_char(res)).numpy().decode("utf-8")
         output_text.append(res)
-    return output_text
+    
+    acc = 0
+    hacc = 0
+    print('Predicted text: ', output_text[1])
+    print('Actual text: ', validation_samples[1])
+    print('test sample' , test_samples[1])
+    print('train sample' , train_samples[1])
+    
+    #get total accuracy for all words in batch
+    for i in range(len(output_text)):
+        #convert validation labels to string
+        if output_text[i] == test_samples[i].replace('\n', '').split(' ')[-1]:
+            acc += 1
 
+        #compair predicted text with actual text based on % of similarity
+        #if similar enough, add to accuracy
+        if SequenceMatcher(output_text[i], test_samples[i].replace('\n', '').split(' ')[-1]).ratio() > 0.8:
+            hacc += 1
+    print('Accuracy: ', (acc/len(output_text))* 100)
+    
+    return [output_text, (acc/len(output_text))* 100, (hacc/len(output_text))* 100]
+
+
+def SequenceMatcher(a, b):
+    return difflib.SequenceMatcher(None, a, b)
+
+#  Let's check results on some test samples.
+total_acc = []
+total_high_acc = []
+for batch in test_ds.take(1):
+    batch_images = batch["image"]
+    _, ax = plt.subplots(4, 4, figsize=(15, 8))
+
+    preds = prediction_model.predict(batch_images)
+
+    [pred_texts, batchAccuracy, highAcc] = decode_batch_predictions(preds)
+    total_acc.append(batchAccuracy)
+    total_high_acc.append(highAcc)
+
+    for i in range(16):
+        img = batch_images[i]
+        img = tf.image.flip_left_right(img)
+        img = tf.transpose(img, perm=[1, 0, 2])
+        img = (img * 255.0).numpy().clip(0, 255).astype(np.uint8)
+        img = img[:, :, 0]
+
+        title = f"Prediction: {pred_texts[i]}"
+        ax[i // 4, i % 4].imshow(img, cmap="gray")
+        ax[i // 4, i % 4].set_title(title)
+        ax[i // 4, i % 4].axis("off")
+
+
+print('Total Accuracy: ', np.mean(total_acc))
+print('Total High Accuracy: ', np.mean(total_high_acc))
+plt.show()
 
 #  Let's check results on some test samples.
     for batch in test_ds.take(1):
