@@ -448,5 +448,4 @@ plt.show()
         ax[i // 4, i % 4].set_title(title)
         ax[i // 4, i % 4].axis("off")
 
-        plt.show()
-       
+        plt.show()    
